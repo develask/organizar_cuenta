@@ -1,0 +1,53 @@
+/* Custom styles for Transaction Categorizer */
+
+/* Add some spacing between elements */
+.container {
+    padding-bottom: 2rem;
+}
+
+/* Style for transaction badges */
+.badge {
+    margin-right: 0.25rem;
+    font-weight: normal;
+    font-size: 0.85rem;
+}
+
+.badge a {
+    text-decoration: none;
+}
+
+/* Fix for modals appearing behind backdrop */
+.modal {
+    z-index: 1050;
+}
+
+/* Make table more readable */
+.table {
+    width: 100%;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Style for amounts */
+.text-danger {
+    font-weight: 500;
+}
+
+.text-success {
+    font-weight: 500;
+}
+
+/* Footer styling */
+.footer {
+    margin-top: 3rem;
+    border-top: 1px solid #dee2e6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .table-responsive {
+        overflow-x: auto;
+    }
+}

@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}Transactions - Transaction Categorizer{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Transactions</h1>
+
+<!-- Filter Form -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Filter Transactions</h5>
+    </div>
+    <div class="card-body">
+        <form action="/transactions/filter" method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="month" class="form-label">Month</label>
+                <select name="month" id="month" class="form-select">
+                    <option value="">All Months</option>
+                    <option value="01" {% if selected_month == "01" %}selected{% endif %}>January</option>
+                    <option value="02" {% if selected_month == "02" %}selected{% endif %}>February</option>
+                    <option value="03" {% if selected_month == "03" %}selected{% endif %}>March</option>
+                    <option value="04" {% if selected_month == "04" %}selected{% endif %}>April</option>
+                    <option value="05" {% if selected_month == "05" %}selected{% endif %}>May</option>
+                    <option value="06" {% if selected_month == "06" %}selected{% endif %}>June</option>
+                    <option value="07" {% if selected_month == "07" %}selected{% endif %}>July</option>
+                    <option value="08" {% if selected_month == "08" %}selected{% endif %}>August</option>
+                    <option value="09" {% if selected_month == "09" %}selected{% endif %}>September</option>
+                    <option value="10" {% if selected_month == "10" %}selected{% endif %}>October</option>
+                    <option value="11" {% if selected_month == "11" %}selected{% endif %}>November</option>
+                    <option value="12" {% if selected_month == "12" %}selected{% endif %}>December</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="category_id" class="form-label">Category</label>
+                <select name="category_id" id="category_id" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                    <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
+                        {{ category.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="/" class="btn btn-secondary ms-2">Clear</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Transactions Table -->
+<div class="card">
+    <div class="card-header">
+        <h5>Transactions List</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Value Date</th>
+                        <th>Description</th>
+                        <th>Amount</th>
+                        <th>Balance</th>
+                        <th>Categories</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions %}
+                    <tr class="{% if transaction.importe < 0 %}table-danger{% else %}table-success{% endif %}">
+                        <td>{{ transaction.fecha }}</td>
+                        <td>{{ transaction.fecha_valor }}</td>
+                        <td>{{ transaction.descripcion }}</td>
+                        <td class="text-{% if transaction.importe < 0 %}danger{% else %}success{% endif %}">
+                            {{ "%.2f"|format(transaction.importe) }} €
+                        </td>
+                        <td>{{ "%.2f"|format(transaction.saldo) }} €</td>
+                        <td>
+                            {% for category in transaction.categories %}
+                            <span class="badge rounded-pill bg-info text-dark mb-1">
+                                {{ category.name }}
+                                <a href="#" onclick="event.preventDefault(); document.getElementById('remove-category-{{ transaction.id }}-{{ category.id }}').submit();" class="text-danger ms-1">×</a>
+                                <form id="remove-category-{{ transaction.id }}-{{ category.id }}" action="/transactions/{{ transaction.id }}/remove-category/{{ category.id }}" method="post" class="d-none"></form>
+                            </span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <!-- Add Category Button -->
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addCategoryModal-{{ transaction.id }}">
+                                Add Category
+                            </button>
+
+                            <!-- Add Category Modal -->
+                            <div class="modal fade" id="addCategoryModal-{{ transaction.id }}" tabindex="-1" aria-labelledby="addCategoryModalLabel-{{ transaction.id }}" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="addCategoryModalLabel-{{ transaction.id }}">Add Category to Transaction</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form action="/transactions/{{ transaction.id }}/categorize" method="post" id="categorize-form-{{ transaction.id }}">
+                                                <div class="mb-3">
+                                                    <label for="category_id-{{ transaction.id }}" class="form-label">Select Category</label>
+                                                    <select class="form-select" id="category_id-{{ transaction.id }}" name="category_id" required>
+                                                        <option value="" selected disabled>Choose a category...</option>
+                                                        {% for category in categories %}
+                                                        <option value="{{ category.id }}">{{ category.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" form="categorize-form-{{ transaction.id }}" class="btn btn-primary">Add Category</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center">No transactions found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add any additional JavaScript for the transactions page here
+    });
+</script>
+{% endblock %}
