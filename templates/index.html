@@ -16,26 +16,20 @@
                 <label for="month" class="form-label">Month</label>
                 <select name="month" id="month" class="form-select">
                     <option value="">All Months</option>
-                    <option value="01" {% if selected_month == "01" %}selected{% endif %}>January</option>
-                    <option value="02" {% if selected_month == "02" %}selected{% endif %}>February</option>
-                    <option value="03" {% if selected_month == "03" %}selected{% endif %}>March</option>
-                    <option value="04" {% if selected_month == "04" %}selected{% endif %}>April</option>
-                    <option value="05" {% if selected_month == "05" %}selected{% endif %}>May</option>
-                    <option value="06" {% if selected_month == "06" %}selected{% endif %}>June</option>
-                    <option value="07" {% if selected_month == "07" %}selected{% endif %}>July</option>
-                    <option value="08" {% if selected_month == "08" %}selected{% endif %}>August</option>
-                    <option value="09" {% if selected_month == "09" %}selected{% endif %}>September</option>
-                    <option value="10" {% if selected_month == "10" %}selected{% endif %}>October</option>
-                    <option value="11" {% if selected_month == "11" %}selected{% endif %}>November</option>
-                    <option value="12" {% if selected_month == "12" %}selected{% endif %}>December</option>
+                    {% for month_num in range(1, 13) %}
+                    {% set month_value = current_year ~ "-" ~ "%02d"|format(month_num) %}
+                    <option value="{{ month_value }}" {% if month == month_value %}selected{% endif %}>
+                        {{ ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][month_num-1] }} {{ current_year }}
+                    </option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="col-md-4">
                 <label for="category_id" class="form-label">Category</label>
                 <select name="category_id" id="category_id" class="form-select">
-                    <option value="">All Categories</option>
+                    <option value="-1">All Categories</option>
                     {% for category in categories %}
-                    <option value="{{ category.id }}" {% if selected_category == category.id %}selected{% endif %}>
+                    <option value="{{ category.id }}" {% if category_id == category.id %}selected{% endif %}>
                         {{ category.name }}
                     </option>
                     {% endfor %}

@@ -86,7 +86,7 @@ async def index(request: Request, db: DatabaseConnection = Depends(get_db)):
     
     return templates.TemplateResponse(
         "index.html", 
-        {"request": request, "transactions": transactions_list, "categories": categories_list}
+        {"request": request, "transactions": transactions_list, "categories": categories_list, "current_year": datetime.now().year}
     )
 
 @app.get("/categories", response_class=HTMLResponse)
@@ -160,59 +160,56 @@ async def filter_transactions(
     category_id: Optional[int] = None,
     db: DatabaseConnection = Depends(get_db)
 ):
-    query = "SELECT * FROM movimientos WHERE 1=1"
-    params = []
-    
+    query = """
+    SELECT
+        m.id, m.fecha, m.fecha_valor, m.descripcion, m.importe, m.saldo,
+        c.id as category_id, c.name as category_name, c.description as category_description
+    FROM movimientos m
+    LEFT JOIN movements_categories mc ON m.id = mc.movement_id
+    LEFT JOIN categories c ON mc.category_id = c.id
+    """
+    where_clauses = []
+    where_params = []
     if month:
-        query += " AND strftime('%m', fecha) = ?"
-        params.append(month)
-    
-    transactions = db.execute_query(query, tuple(params))
-    
-    transactions_list = []
-    for t in transactions:
-        transaction = {
-            'id': t[0],
-            'fecha': t[1],
-            'fecha_valor': t[2],
-            'descripcion': t[3],
-            'importe': t[4],
-            'saldo': t[5]
-        }
+        where_clauses.append("strftime('%Y-%m', m.fecha) = ?")
+        where_params.append(month)
+    if category_id and category_id > 0:
+        where_clauses.append("c.id = ?")
+        where_params.append(category_id)
+    if where_clauses:
+        query += " WHERE " + " AND ".join(where_clauses)
+    query += " ORDER BY m.id, c.id"
+    transactions_data = db.execute_query(query, where_params)
+    transactions_dict = {}
+    for row in transactions_data:
+        trans_id = row[0]
+        if trans_id not in transactions_dict:
+            transactions_dict[trans_id] = {
+                'id': row[0],
+                'fecha': row[1],
+                'fecha_valor': row[2],
+                'descripcion': row[3],
+                'importe': row[4],
+                'saldo': row[5],
+                'categories': []
+            }
         
-        # Get categories for this transaction
-        categories = db.execute_query("""
-            SELECT c.id, c.name, c.description 
-            FROM categories c
-            JOIN movements_categories mc ON c.id = mc.category_id
-            WHERE mc.movement_id = ?
-        """, (transaction['id'],))
-        
-        transaction['categories'] = [
-            {'id': c[0], 'name': c[1], 'description': c[2]} for c in categories
-        ]
-        
-        # Filter by category if specified
-        if category_id is not None:
-            if any(c['id'] == category_id for c in transaction['categories']):
-                transactions_list.append(transaction)
-        else:
-            transactions_list.append(transaction)
-    
-    # Get all categories for the dropdown
+        # Add category if it exists
+        if row[6] is not None:  # category_id
+            transactions_dict[trans_id]['categories'].append({
+                'id': row[6],
+                'name': row[7],
+                'description': row[8]
+            })
+
+    transactions_list = list(transactions_dict.values())
     categories = db.select('categories')
     categories_list = [{'id': c[0], 'name': c[1], 'description': c[2]} for c in categories]
-    
     return templates.TemplateResponse(
         "index.html", 
-        {
-            "request": request, 
-            "transactions": transactions_list, 
-            "categories": categories_list,
-            "selected_month": month,
-            "selected_category": category_id
-        }
+        {"request": request, "transactions": transactions_list, "categories": categories_list, "month": month, "category_id": category_id, "current_year": datetime.now().year}
     )
+
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
