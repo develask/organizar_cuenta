@@ -16,11 +16,6 @@
     text-decoration: none;
 }
 
-/* Fix for modals appearing behind backdrop */
-.modal {
-    z-index: 1050;
-}
-
 /* Make table more readable */
 .table {
     width: 100%;
