@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Excel File - Transaction Categorizer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="mb-0">
+                    <i class="bi bi-file-earmark-excel"></i>
+                    Upload Excel File
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-info-circle"></i>
+                        Instructions
+                    </h6>
+                    <ul class="mb-3">
+                        <li>Upload Excel files (.xls or .xlsx) containing your bank movements</li>
+                        <li>The file should have a sheet named "Listado"</li>
+                        <li>Column headers should be in the 6th row (row 5 index)</li>
+                        <li>Expected columns: data, azalpena, balio-data, eragiketaren zenbatekoa, saldoa</li>
+                        <li>Duplicate movements will be skipped automatically</li>
+                    </ul>
+                    <a href="/download-template" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-download"></i>
+                        Download Template Example
+                    </a>
+                </div>
+
+                <form action="/upload" method="post" enctype="multipart/form-data" id="upload-form">
+                    <div class="mb-4">
+                        <label for="file" class="form-label">Choose Excel File</label>
+                        <div class="upload-area" id="upload-area">
+                            <div class="mb-3">
+                                <i class="bi bi-cloud-upload display-4 text-muted"></i>
+                            </div>
+                            <h5>Drag & Drop your Excel file here</h5>
+                            <p class="text-muted">or click to browse</p>
+                            <input type="file" class="form-control d-none" id="file" name="file" accept=".xls,.xlsx" required>
+                        </div>
+                        <div class="form-text mt-2">
+                            Maximum file size: 10MB. Supported formats: .xls, .xlsx
+                        </div>
+                        <div id="file-info" class="mt-2 d-none">
+                            <div class="alert alert-info">
+                                <i class="bi bi-file-earmark-excel"></i>
+                                Selected file: <span id="file-name"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="/" class="btn btn-secondary me-md-2">Cancel</a>
+                        <button type="submit" class="btn btn-primary" id="upload-btn">
+                            <i class="bi bi-cloud-upload"></i>
+                            Upload File
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Upload Progress -->
+        <div class="card mt-3 d-none" id="progress-card">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="spinner-border spinner-border-sm me-3" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <div>
+                        <strong>Processing file...</strong>
+                        <div class="small text-muted">Please wait while we process your Excel file</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('upload-area');
+    const fileInput = document.getElementById('file');
+    const fileInfo = document.getElementById('file-info');
+    const fileName = document.getElementById('file-name');
+    const uploadForm = document.getElementById('upload-form');
+    const uploadBtn = document.getElementById('upload-btn');
+    const progressCard = document.getElementById('progress-card');
+
+    // Click to browse functionality
+    uploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+
+    // File input change handler
+    fileInput.addEventListener('change', function(e) {
+        handleFileSelection(e.target.files[0]);
+    });
+
+    // Drag and drop functionality
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
+
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+    });
+
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelection(file);
+        }
+    });
+
+    function handleFileSelection(file) {
+        if (!file) return;
+
+        // Validate file type
+        const validExtensions = ['.xls', '.xlsx'];
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+        
+        if (!validExtensions.includes(fileExtension)) {
+            alert('Please select a valid Excel file (.xls or .xlsx)');
+            fileInput.value = '';
+            fileInfo.classList.add('d-none');
+            return;
+        }
+
+        // Validate file size (10MB limit)
+        const maxSize = 10 * 1024 * 1024;
+        if (file.size > maxSize) {
+            alert('File size too large. Please select a file smaller than 10MB.');
+            fileInput.value = '';
+            fileInfo.classList.add('d-none');
+            return;
+        }
+
+        // Show file info
+        fileName.textContent = file.name + ' (' + formatFileSize(file.size) + ')';
+        fileInfo.classList.remove('d-none');
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Form submission handler
+    uploadForm.addEventListener('submit', function(e) {
+        if (!fileInput.files[0]) {
+            e.preventDefault();
+            alert('Please select a file to upload');
+            return;
+        }
+        
+        // Show progress indicator
+        uploadBtn.disabled = true;
+        uploadBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Uploading...';
+        progressCard.classList.remove('d-none');
+        
+        // Disable the upload area during upload
+        uploadArea.style.pointerEvents = 'none';
+        uploadArea.style.opacity = '0.6';
+    });
+});
+</script>
+{% endblock %}

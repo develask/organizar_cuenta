@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ error_code }} - Transaction Categorizer{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <h3 class="mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Error {{ error_code }}
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    {% if error_code == 404 %}
+                        <i class="bi bi-file-earmark-x display-1 text-muted"></i>
+                        <h4 class="mt-3">Page Not Found</h4>
+                        <p class="text-muted">The page you're looking for doesn't exist.</p>
+                    {% elif error_code == 400 %}
+                        <i class="bi bi-exclamation-triangle display-1 text-warning"></i>
+                        <h4 class="mt-3">Bad Request</h4>
+                        <p class="text-muted">{{ error_message }}</p>
+                    {% elif error_code == 500 %}
+                        <i class="bi bi-gear display-1 text-danger"></i>
+                        <h4 class="mt-3">Internal Server Error</h4>
+                        <p class="text-muted">Something went wrong on our end. Please try again later.</p>
+                    {% else %}
+                        <i class="bi bi-exclamation-triangle display-1 text-danger"></i>
+                        <h4 class="mt-3">Error {{ error_code }}</h4>
+                        <p class="text-muted">{{ error_message }}</p>
+                    {% endif %}
+                </div>
+
+                {% if error_code == 400 %}
+                <div class="alert alert-info">
+                    <h6 class="alert-heading">
+                        <i class="bi bi-info-circle"></i>
+                        File Upload Tips
+                    </h6>
+                    <ul class="mb-0">
+                        <li>Make sure your Excel file has a sheet named "Listado"</li>
+                        <li>Column headers should be in the 6th row</li>
+                        <li>Expected columns: data, azalpena, balio-data, eragiketaren zenbatekoa, saldoa</li>
+                        <li>File size should be less than 10MB</li>
+                        <li>Only .xls and .xlsx files are supported</li>
+                    </ul>
+                </div>
+                {% endif %}
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                    <a href="/" class="btn btn-primary me-md-2">
+                        <i class="bi bi-house"></i>
+                        Go Home
+                    </a>
+                    {% if error_code == 400 %}
+                    <a href="/upload" class="btn btn-outline-primary">
+                        <i class="bi bi-cloud-upload"></i>
+                        Try Upload Again
+                    </a>
+                    {% endif %}
+                    <button onclick="window.history.back()" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left"></i>
+                        Go Back
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-redirect to home after 10 seconds for 500 errors
+{% if error_code == 500 %}
+setTimeout(function() {
+    if (confirm('Would you like to return to the home page?')) {
+        window.location.href = '/';
+    }
+}, 10000);
+{% endif %}
+</script>
+{% endblock %}

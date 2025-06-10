@@ -1,42 +1,7 @@
 from database_connection import DatabaseConnection
 from read_file import read_file
 
-with DatabaseConnection() as db:
-    # ceate the table if it doesn't exist
-    create_table_query = """
-    CREATE TABLE IF NOT EXISTS movimientos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        fecha TEXT,
-        fecha_valor TEXT,
-        descripcion TEXT,
-        importe REAL,
-        saldo REAL
-    );
-    """
-    db.execute_query(create_table_query)
 
-    # create table for categories if it doesn't exist
-    create_categories_table_query = """
-    CREATE TABLE IF NOT EXISTS categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE,
-        description TEXT
-    );
-    """
-
-    db.execute_query(create_categories_table_query)
-
-    # create table for movements categories if it doesn't exist
-    create_movements_categories_table_query = """
-    CREATE TABLE IF NOT EXISTS movements_categories (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        movement_id INTEGER,
-        category_id INTEGER,
-        FOREIGN KEY (movement_id) REFERENCES movimientos(id),
-        FOREIGN KEY (category_id) REFERENCES categories(id)
-    );
-    """
-    db.execute_query(create_movements_categories_table_query)
 
 
 # with DatabaseConnection() as db:

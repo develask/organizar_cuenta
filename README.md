@@ -9,10 +9,14 @@ Esta aplicación web me permite importar mis extractos bancarios (archivos Excel
 ## ✨ Características
 
 - **Importación de datos**: Lectura automática de archivos Excel con movimientos bancarios
+- **Subida de archivos**: Interfaz web con drag & drop para subir archivos Excel
+- **Validación de datos**: Detección automática de duplicados y validación de formato
 - **Base de datos**: Almacenamiento persistente con SQLite
 - **Categorización**: Sistema de categorías personalizables para organizar gastos
 - **Interfaz web**: Interfaz moderna con Bootstrap para visualizar y gestionar movimientos
 - **Filtros**: Filtrado por mes y categoría
+- **Plantilla de ejemplo**: Descarga de archivo Excel de ejemplo con el formato correcto
+- **Manejo de errores**: Páginas de error personalizadas y validación robusta
 - **Análisis**: Jupyter Notebook para análisis de datos con pandas
 
 ## 🛠️ Tecnologías Utilizadas
@@ -85,6 +89,50 @@ La aplicación estará disponible en `http://localhost:8000`
 jupyter notebook movimientos.ipynb
 ```
 
+## 📋 Instrucciones de Uso
+
+### Subir Archivos Excel
+
+1. **Accede a la página de subida**: Navega a `/upload` o haz clic en "Upload Excel" en la barra de navegación
+2. **Prepara tu archivo**: Asegúrate de que tu archivo Excel tenga:
+   - Una hoja llamada "Listado"
+   - Cabeceras en la fila 6 (índice 5): data, azalpena, balio-data, eragiketaren zenbatekoa, saldoa
+   - Datos a partir de la fila 8
+3. **Sube el archivo**: Arrastra y suelta el archivo o haz clic para seleccionarlo
+4. **Descarga plantilla**: Si necesitas un ejemplo, descarga la plantilla de ejemplo
+
+### Gestión de Categorías
+
+1. **Crear categorías**: Ve a `/categories` y añade nuevas categorías
+2. **Asignar categorías**: En la lista de movimientos, usa "Add Category" para cada transacción
+3. **Filtrar por categoría**: Usa los filtros en la página principal
+
+### Formato de Archivo Excel
+
+Tu archivo Excel puede tener cualquiera de estos formatos:
+
+#### Formato Euskera (formato original)
+```
+Cualquier fila: data | azalpena | balio-data | eragiketaren zenbatekoa | saldoa
+```
+
+#### Formato Español (nuevo soporte)
+```
+Cualquier fila: fecha | concepto | fecha valor | importe | saldo
+```
+
+**La aplicación detecta automáticamente:**
+- El nombre de la hoja (prefiere "Listado" pero acepta cualquier hoja con datos)
+- La fila donde están las cabeceras (busca automáticamente)
+- El formato de las columnas (euskera o español)
+
+**Ejemplo de datos:**
+- **Fecha**: 2025/06/10 o 10/06/2025
+- **Descripción/Concepto**: Descripción del movimiento
+- **Fecha valor**: 2025/06/10 o 10/06/2025
+- **Importe**: -25.50 (negativo para gastos, positivo para ingresos)
+- **Saldo**: 1000.00 (saldo resultante)
+
 ## 📊 Funcionalidades
 
 ### Gestión de Movimientos
@@ -98,8 +146,12 @@ jupyter notebook movimientos.ipynb
 - Gestión completa de categorías (crear, eliminar)
 
 ### Importación de Datos
-- Soporte para archivos Excel (.xls)
+- Soporte para archivos Excel (.xls, .xlsx)
+- Interfaz drag & drop para subida de archivos
 - Procesamiento automático de formato bancario
+- Detección y omisión automática de duplicados
+- Validación robusta de datos con manejo de errores
+- Plantilla de ejemplo descargable
 - Limpieza y normalización de datos
 
 ## 🔒 Privacidad y Seguridad

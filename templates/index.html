@@ -3,7 +3,32 @@
 {% block title %}Transactions - Transaction Categorizer{% endblock %}
 
 {% block content %}
-<h1 class="mb-4">Transactions</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Transactions</h1>
+    <a href="/upload" class="btn btn-success">
+        <i class="bi bi-cloud-upload"></i>
+        Upload Excel File
+    </a>
+</div>
+
+<!-- Success Message for Upload -->
+{% if request.query_params.get('upload_success') %}
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="bi bi-check-circle"></i>
+    <strong>Upload successful!</strong> 
+    {{ request.query_params.get('inserted', '0') }} new transactions added.
+    {% if request.query_params.get('duplicates', '0') != '0' %}
+    {{ request.query_params.get('duplicates') }} duplicates were skipped.
+    {% endif %}
+    {% if request.query_params.get('errors', '0') != '0' %}
+    <br><small class="text-warning">
+        <i class="bi bi-exclamation-triangle"></i>
+        {{ request.query_params.get('errors') }} rows had errors and were skipped.
+    </small>
+    {% endif %}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endif %}
 
 <!-- Filter Form -->
 <div class="card mb-4">
