@@ -203,7 +203,7 @@ async def index(request: Request, month: Optional[str]= None, category_id: Optio
     if where_clauses:
         query += " WHERE " + " AND ".join(where_clauses)
         query += " GROUP BY m.id, c.id"
-    query += " ORDER BY m.id, c.id"
+    query += " ORDER BY m.fecha DESC, m.id DESC"
     
     transactions_data = db.execute_query(query, where_params)
 
