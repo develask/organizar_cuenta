@@ -89,6 +89,75 @@
     border-color: #146c43;
 }
 
+/* AJAX notifications */
+.ajax-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    min-width: 300px;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+}
+
+.ajax-notification.show {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.ajax-notification.hide {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+/* Loading spinner for category buttons */
+.btn-loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.btn-loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    margin: auto;
+    border: 2px solid transparent;
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Category badge animation */
+.badge-new {
+    animation: highlightCategory 2s ease;
+}
+
+@keyframes highlightCategory {
+    0% { 
+        background-color: #28a745 !important;
+        transform: scale(1.1);
+    }
+    50% { 
+        background-color: #28a745 !important;
+        transform: scale(1.1);
+    }
+    100% { 
+        background-color: #0dcaf0 !important;
+        transform: scale(1);
+    }
+}
+
 /* Footer styling */
 .footer {
     margin-top: 3rem;

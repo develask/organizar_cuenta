@@ -36,7 +36,7 @@
         <h5>Filter Transactions</h5>
     </div>
     <div class="card-body">
-        <form action="/transactions/filter" method="get" class="row g-3">
+        <form action="/" method="get" class="row g-3">
             <div class="col-md-4">
                 <label for="month" class="form-label">Month</label>
                 <select name="month" id="month" class="form-select">
@@ -101,7 +101,7 @@
                             {% for category in transaction.categories %}
                             <span class="badge rounded-pill bg-info text-dark mb-1">
                                 {{ category.name }}
-                                <a href="#" onclick="event.preventDefault(); document.getElementById('remove-category-{{ transaction.id }}-{{ category.id }}').submit();" class="text-danger ms-1">×</a>
+                                <a href="#" data-transaction-id="{{ transaction.id }}" data-category-id="{{ category.id }}" class="text-danger ms-1 remove-category-link">×</a>
                                 <form id="remove-category-{{ transaction.id }}-{{ category.id }}" action="/transactions/{{ transaction.id }}/remove-category/{{ category.id }}" method="post" class="d-none"></form>
                             </span>
                             {% endfor %}
@@ -157,7 +157,8 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Add any additional JavaScript for the transactions page here
+        // Initialize AJAX functionality for category management
+        initializeCategoryAjax();
     });
 </script>
 {% endblock %}
