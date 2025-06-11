@@ -232,13 +232,28 @@ async def index(request: Request, month: Optional[str]= None, category_id: Optio
     
     transactions_list = list(transactions_dict.values())
     
+    # Calculate totals
+    total_spent = sum(t['importe'] for t in transactions_list if t['importe'] < 0)
+    total_received = sum(t['importe'] for t in transactions_list if t['importe'] > 0)
+    total_difference = total_received + total_spent  # spent is already negative
+    
     # Get all categories
     categories = db.select('categories')
     categories_list = [{'id': c[0], 'name': c[1], 'description': c[2]} for c in categories]
     
     return templates.TemplateResponse(
         "index.html", 
-        {"request": request, "transactions": transactions_list, "categories": categories_list, "current_year": datetime.now().year, "month": month, "category_id": category_id}
+        {
+            "request": request, 
+            "transactions": transactions_list, 
+            "categories": categories_list, 
+            "current_year": datetime.now().year, 
+            "month": month, 
+            "category_id": category_id,
+            "total_spent": total_spent,
+            "total_received": total_received,
+            "total_difference": total_difference
+        }
     )
 
 @app.get("/categories", response_class=HTMLResponse)

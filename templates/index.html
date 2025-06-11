@@ -68,6 +68,50 @@
     </div>
 </div>
 
+<!-- Summary Totals -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Summary</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card border-danger summary-card">
+                    <div class="card-body text-center">
+                        <h6 class="card-title text-danger">
+                            <i class="bi bi-arrow-down-circle"></i>
+                            Total Spent
+                        </h6>
+                        <h4 class="text-danger">{{ "%.2f"|format(total_spent) }} €</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-success summary-card">
+                    <div class="card-body text-center">
+                        <h6 class="card-title text-success">
+                            <i class="bi bi-arrow-up-circle"></i>
+                            Total Received
+                        </h6>
+                        <h4 class="text-success">{{ "%.2f"|format(total_received) }} €</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-{% if total_difference >= 0 %}success{% else %}danger{% endif %} summary-card">
+                    <div class="card-body text-center">
+                        <h6 class="card-title text-{% if total_difference >= 0 %}success{% else %}danger{% endif %}">
+                            <i class="bi bi-{% if total_difference >= 0 %}plus{% else %}dash{% endif %}-circle"></i>
+                            Difference
+                        </h6>
+                        <h4 class="text-{% if total_difference >= 0 %}success{% else %}danger{% endif %}">{{ "%.2f"|format(total_difference) }} €</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Transactions Table -->
 <div class="card">
     <div class="card-header">
