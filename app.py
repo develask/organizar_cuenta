@@ -275,6 +275,22 @@ async def create_category(
     db.insert('categories', {'name': name, 'description': description})
     return RedirectResponse(url="/categories", status_code=303)
 
+@app.post("/categories/{category_id}/edit")
+async def edit_category(
+    category_id: int,
+    name: str = Form(...),
+    description: str = Form(None),
+    db: DatabaseConnection = Depends(get_db)
+):
+    # Update the category
+    db.update(
+        'categories', 
+        {'name': name, 'description': description}, 
+        'id = ?', 
+        (category_id,)
+    )
+    return RedirectResponse(url="/categories", status_code=303)
+
 @app.post("/categories/{category_id}/delete")
 async def delete_category(
     category_id: int,

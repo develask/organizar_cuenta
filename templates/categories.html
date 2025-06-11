@@ -61,10 +61,41 @@
                         <td>{{ category.name }}</td>
                         <td>{{ category.description or "-" }}</td>
                         <td>
+                            <button type="button" class="btn btn-sm btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#editCategoryModal-{{ category.id }}">
+                                <i class="bi bi-pencil"></i> Edit
+                            </button>
                             <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteCategoryModal-{{ category.id }}">
-                                Delete
+                                <i class="bi bi-trash"></i> Delete
                             </button>
                             
+                            <!-- Edit Modal -->
+                            <div class="modal fade" id="editCategoryModal-{{ category.id }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Edit Category</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <form action="/categories/{{ category.id }}/edit" method="post" id="edit-category-form-{{ category.id }}">
+                                                <div class="mb-3">
+                                                    <label for="edit-name-{{ category.id }}" class="form-label">Name</label>
+                                                    <input type="text" class="form-control" id="edit-name-{{ category.id }}" name="name" value="{{ category.name }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="edit-description-{{ category.id }}" class="form-label">Description</label>
+                                                    <textarea class="form-control" id="edit-description-{{ category.id }}" name="description" rows="3">{{ category.description or "" }}</textarea>
+                                                </div>
+                                            </form>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" form="edit-category-form-{{ category.id }}" class="btn btn-primary">Save Changes</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Delete Modal -->
                             <div class="modal fade" id="deleteCategoryModal-{{ category.id }}" tabindex="-1" aria-hidden="true">
                                 <div class="modal-dialog">
