@@ -271,28 +271,7 @@ async def delete_category(
     db.delete('categories', 'id = ?', (category_id,))
     return RedirectResponse(url="/categories", status_code=303)
 
-@app.post("/transactions/{transaction_id}/categorize")
-async def categorize_transaction(
-    transaction_id: int,
-    category_id: int = Form(...),
-    db: DatabaseConnection = Depends(get_db)
-):
-    # Check if this categorization already exists
-    existing = db.select(
-        'movements_categories', 
-        where='movement_id = ? AND category_id = ?', 
-        where_params=(transaction_id, category_id)
-    )
-    
-    if not existing:
-        db.insert('movements_categories', {
-            'movement_id': transaction_id,
-            'category_id': category_id
-        })
-    
-    return RedirectResponse(url="/", status_code=303)
-
-@app.post("/api/transactions/{transaction_id}/categorize")
+@app.post("/api/transactions/{transaction_id}/add-category")
 async def categorize_transaction_ajax(
     transaction_id: int,
     category_id: int = Form(...),
@@ -350,7 +329,7 @@ async def categorize_transaction_ajax(
             content={"success": False, "message": "Internal server error"}
         )
 
-@app.post("/api/transactions/{transaction_id}/remove-category/{category_id}")
+@app.delete("/api/transactions/{transaction_id}/remove-category/{category_id}")
 async def remove_category_from_transaction_ajax(
     transaction_id: int,
     category_id: int,
@@ -525,54 +504,6 @@ async def upload_excel(
         print(f"Unexpected error uploading file: {e}")
         raise HTTPException(status_code=500, detail="An unexpected error occurred while processing the file")
 
-@app.get("/download-template")
-async def download_template():
-    """Download an Excel template file"""
-    try:
-        # Create a sample DataFrame with the correct structure
-        sample_data = {
-            'data': ['2025/06/10', '2025/06/11', '2025/06/12'],
-            'azalpena': ['Sample transaction 1', 'Sample transaction 2', 'Sample transaction 3'],
-            'balio-data': ['2025/06/10', '2025/06/11', '2025/06/12'],
-            'eragiketaren zenbatekoa': [-25.50, 100.00, -12.30],
-            'saldoa': [1000.00, 1100.00, 1087.70]
-        }
-        
-        # Create DataFrame
-        df = pd.DataFrame(sample_data)
-        
-        # Create Excel file in memory
-        output = io.BytesIO()
-        
-        # Create a workbook with proper structure
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            # Create empty rows for the header structure
-            empty_df = pd.DataFrame([[None] * 5] * 5)  # 5 empty rows
-            empty_df.to_excel(writer, sheet_name='Listado', index=False, header=False, startrow=0)
-            
-            # Add the column headers in row 6 (index 5)
-            header_df = pd.DataFrame([['data', 'azalpena', 'balio-data', 'eragiketaren zenbatekoa', 'saldoa']])
-            header_df.to_excel(writer, sheet_name='Listado', index=False, header=False, startrow=5)
-            
-            # Add an empty row
-            empty_row = pd.DataFrame([[None] * 5])
-            empty_row.to_excel(writer, sheet_name='Listado', index=False, header=False, startrow=6)
-            
-            # Add sample data starting from row 8 (index 7)
-            df.to_excel(writer, sheet_name='Listado', index=False, header=False, startrow=7)
-        
-        output.seek(0)
-        
-        # Return the file
-        return StreamingResponse(
-            io.BytesIO(output.read()),
-            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            headers={'Content-Disposition': 'attachment; filename="movimientos_template.xlsx"'}
-        )
-        
-    except Exception as e:
-        print(f"Error creating template: {e}")
-        raise HTTPException(status_code=500, detail="Error creating template file")
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="127.0.0.1", port=8000, reload=True)
