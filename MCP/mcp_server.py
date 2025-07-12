@@ -77,6 +77,38 @@ def get_transactions(month: str = None, category_id: Optional[int] = None) -> An
         db.close()
 
 @mcp.tool()
+def get_category_report(month: str = None) -> Any:
+    """
+    Obtiene un informe de transacciones por categoría, opcionalmente filtrado por mes (formato 'YYYY-MM').
+    :param month: El mes para filtrar las transacciones (ej. '2025-07').
+    :return: Un diccionario con el total por categoría.
+    """
+    db = get_db_connection()
+    try:
+        query = """
+            SELECT
+                c.id, c.name, SUM(m.importe) as total
+            FROM movimientos m
+            LEFT JOIN movements_categories mc ON m.id = mc.movement_id
+            LEFT JOIN categories c ON mc.category_id = c.id
+        """
+        where_clauses = []
+        where_params = []
+        if month:
+            where_clauses.append("strftime('%Y-%m', m.fecha) = ?")
+            where_params.append(month)
+
+        if where_clauses:
+            query += " WHERE " + " AND ".join(where_clauses)
+
+        query += " GROUP BY c.id ORDER BY c.name"
+
+        categories_data = db.execute_query(query, where_params)
+        return [{'id': row[0], 'name': row[1], 'total': row[2]} for row in categories_data]
+    finally:
+        db.close()
+
+@mcp.tool()
 def get_categories() -> Any:
     """
     Obtiene una lista de todas las categorías, ordenadas por nombre.
