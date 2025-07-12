@@ -240,6 +240,8 @@ async def index(request: Request, month: Optional[str]= None, category_id: Optio
     # Get all categories
     categories = db.select('categories')
     categories_list = [{'id': c[0], 'name': c[1], 'description': c[2]} for c in categories]
+    # Order categories by name
+    categories_list.sort(key=lambda c: c['name'].lower())
     
     return templates.TemplateResponse(
         "index.html", 
