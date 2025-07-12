@@ -23,7 +23,7 @@ def get_db_connection():
     return db
 
 @mcp.tool()
-def get_transactions(month: Optional[str] = None, category_id: Optional[int] = None) -> Any:
+def get_transactions(month: str = None, category_id: Optional[int] = None) -> Any:
     """
     Obtiene las transacciones, opcionalmente filtradas por mes (formato 'YYYY-MM') y/o ID de categoría.
     Esta función replica la lógica de consulta de la ruta principal de la aplicación web.
