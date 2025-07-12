@@ -237,6 +237,23 @@ async def index(request: Request, month: Optional[str]= None, category_id: Optio
     total_received = sum(t['importe'] for t in transactions_list if t['importe'] > 0)
     total_difference = total_received + total_spent  # spent is already negative
     
+    # Calculate totals per category for the chart (only expenses)
+    category_totals = {}
+    for transaction in transactions_list:
+        if transaction['importe'] < 0:
+            if transaction['categories']:
+                for category in transaction['categories']:
+                    category_name = category['name']
+                    if category_name not in category_totals:
+                        category_totals[category_name] = 0
+                    # Add the absolute value of the expense
+                    category_totals[category_name] += abs(transaction['importe'])
+            else:
+                # Handle transactions with no category
+                if 'Uncategorized' not in category_totals:
+                    category_totals['Uncategorized'] = 0
+                category_totals['Uncategorized'] += abs(transaction['importe'])
+
     # Get all categories
     categories = db.select('categories')
     categories_list = [{'id': c[0], 'name': c[1], 'description': c[2]} for c in categories]
@@ -254,7 +271,8 @@ async def index(request: Request, month: Optional[str]= None, category_id: Optio
             "category_id": category_id,
             "total_spent": total_spent,
             "total_received": total_received,
-            "total_difference": total_difference
+            "total_difference": total_difference,
+            "category_totals": category_totals
         }
     )
 

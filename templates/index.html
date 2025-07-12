@@ -30,6 +30,18 @@
 </div>
 {% endif %}
 
+<!-- Chart Section -->
+{% if category_totals %}
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Expenses by Category</h5>
+    </div>
+    <div class="card-body">
+        <canvas id="categoryChart" width="400" height="200"></canvas>
+    </div>
+</div>
+{% endif %}
+
 <!-- Filter Form -->
 <div class="card mb-4">
     <div class="card-header">
@@ -203,6 +215,59 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        const categoryData = {{ category_totals | tojson }};
+        
+        const labels = Object.keys(categoryData);
+        const data = Object.values(categoryData);
+        
+        // Generate random colors for the chart
+        const backgroundColors = labels.map(() => 
+            `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.7)`
+        );
+
+        const borderColors = backgroundColors.map(color => color.replace('0.7', '1'));
+
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Expenses by Category',
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderColor: borderColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(context.parsed);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
 <script>
 async function openAddCategoryModal(transactionId) {
     const modal = new bootstrap.Modal(document.getElementById('addCategoryModal'));
