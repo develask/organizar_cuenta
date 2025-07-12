@@ -33,8 +33,9 @@
 <!-- Chart Section -->
 {% if category_totals %}
 <div class="card mb-4">
-    <div class="card-header">
-        <h5>Expenses by Category</h5>
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 id="chartTitle">Expenses by Category</h5>
+        <button id="backButton" class="btn btn-sm btn-secondary" style="display:none;">Back</button>
     </div>
     <div class="card-body">
         <canvas id="categoryChart" width="400" height="200"></canvas>
@@ -216,56 +217,145 @@
 
 {% block extra_js %}
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const ctx = document.getElementById('categoryChart').getContext('2d');
-        const categoryData = {{ category_totals | tojson }};
-        
-        const labels = Object.keys(categoryData);
-        const data = Object.values(categoryData);
-        
-        // Generate random colors for the chart
-        const backgroundColors = labels.map(() => 
-            `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.7)`
-        );
+    let myChart; // Declare chart variable globally
+    let allCategoryData = {{ category_totals | tojson }};
+    let currentPath = ''; // Stores the current drill-down path, e.g., 'gastos', 'gastos/casa'
 
+    function renderChart(path) {
+        currentPath = path;
+        const filteredData = {};
+        const chartTitle = document.getElementById('chartTitle');
+        const backButton = document.getElementById('backButton');
+
+        if (path === '') {
+            // Top level: group by first segment
+            for (const categoryName in allCategoryData) {
+                const value = allCategoryData[categoryName];
+                const topLevelCategory = categoryName.split('/')[0];
+                if (filteredData[topLevelCategory]) {
+                    filteredData[topLevelCategory] += value;
+                } else {
+                    filteredData[topLevelCategory] = value;
+                }
+            }
+            chartTitle.textContent = 'Expenses by Category';
+            backButton.style.display = 'none';
+        } else {
+            // Drill-down level: show subcategories
+            for (const categoryName in allCategoryData) {
+                if (categoryName.startsWith(path + '/')) {
+                    const value = allCategoryData[categoryName];
+                    const remainingPath = categoryName.substring(path.length + 1);
+                    const nextLevelCategory = remainingPath.split('/')[0];
+
+                    if (filteredData[nextLevelCategory]) {
+                        filteredData[nextLevelCategory] += value;
+                    } else {
+                        filteredData[nextLevelCategory] = value;
+                    }
+                }
+            }
+            chartTitle.textContent = `Expenses for: ${path}`;
+            backButton.style.display = 'inline-block';
+        }
+
+        const labels = Object.keys(filteredData);
+        const data = Object.values(filteredData);
+
+        // Generate consistent colors for categories
+        const colors = {};
+        const generateColor = (function() {
+            const colorCache = {};
+            return function(category) {
+                if (!colorCache[category]) {
+                    colorCache[category] = `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.7)`;
+                }
+                return colorCache[category];
+            };
+        })();
+
+        const backgroundColors = labels.map(label => generateColor(label));
         const borderColors = backgroundColors.map(color => color.replace('0.7', '1'));
 
-        new Chart(ctx, {
-            type: 'pie',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Expenses by Category',
-                    data: data,
-                    backgroundColor: backgroundColors,
-                    borderColor: borderColors,
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
+        if (myChart) {
+            myChart.data.labels = labels;
+            myChart.data.datasets[0].data = data;
+            myChart.data.datasets[0].backgroundColor = backgroundColors;
+            myChart.data.datasets[0].borderColor = borderColors;
+            myChart.update();
+        } else {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            myChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Expenses by Category',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(context.parsed);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
                     },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                let label = context.label || '';
-                                if (label) {
-                                    label += ': ';
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const clickedElementIndex = elements[0].index;
+                            const label = myChart.data.labels[clickedElementIndex];
+                            const newPath = currentPath === '' ? label : `${currentPath}/${label}`;
+                            
+                            // Check if there are subcategories for the new path
+                            let hasSubcategories = false;
+                            for (const categoryName in allCategoryData) {
+                                if (categoryName.startsWith(newPath + '/')) {
+                                    hasSubcategories = true;
+                                    break;
                                 }
-                                if (context.parsed !== null) {
-                                    label += new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(context.parsed);
-                                }
-                                return label;
+                            }
+
+                            if (hasSubcategories) {
+                                renderChart(newPath);
                             }
                         }
                     }
                 }
-            }
-        });
+            });
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        renderChart(''); // Render initial chart
+    });
+
+    document.getElementById('backButton').addEventListener('click', function() {
+        const pathParts = currentPath.split('/');
+        if (pathParts.length > 1) {
+            pathParts.pop(); // Remove last part
+            renderChart(pathParts.join('/'));
+        } else {
+            renderChart(''); // Go to top level
+        }
     });
 </script>
 <script>
