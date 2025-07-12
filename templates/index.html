@@ -243,7 +243,17 @@
         } else {
             // Drill-down level: show subcategories
             for (const categoryName in allCategoryData) {
-                if (categoryName.startsWith(path + '/')) {
+                // Check if the category is a direct match for the current path (e.g., 'gastos' when path is 'gastos')
+                if (categoryName === path) {
+                    const label = 'Other'; // Use 'Other' for the direct category
+                    if (filteredData[label]) {
+                        filteredData[label] += allCategoryData[categoryName];
+                    } else {
+                        filteredData[label] = allCategoryData[categoryName];
+                    }
+                }
+                // Check for subcategories (e.g., 'gastos/casa' when path is 'gastos')
+                else if (categoryName.startsWith(path + '/')) {
                     const value = allCategoryData[categoryName];
                     const remainingPath = categoryName.substring(path.length + 1);
                     const nextLevelCategory = remainingPath.split('/')[0];
