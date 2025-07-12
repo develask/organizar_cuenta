@@ -31,18 +31,6 @@
 {% endif %}
 
 <!-- Chart Section -->
-{% if category_totals %}
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 id="chartTitle">Expenses by Category</h5>
-        <button id="backButton" class="btn btn-sm btn-secondary" style="display:none;">Back</button>
-    </div>
-    <div class="card-body">
-        <canvas id="categoryChart" width="400" height="200"></canvas>
-    </div>
-</div>
-{% endif %}
-
 <!-- Filter Form -->
 <div class="card mb-4">
     <div class="card-header">
@@ -78,6 +66,35 @@
                 <a href="/" class="btn btn-secondary ms-2">Clear</a>
             </div>
         </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        {% if category_totals %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 id="chartTitle">Expenses by Category</h5>
+                <button id="backButton" class="btn btn-sm btn-secondary" style="display:none;">Back</button>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-md-6">
+        {% if category_gains_totals %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 id="gainsChartTitle">Gains by Category</h5>
+                <button id="gainsBackButton" class="btn btn-sm btn-secondary" style="display:none;">Back</button>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryGainsChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
@@ -221,6 +238,17 @@
     let allCategoryData = {{ category_totals | tojson }};
     let currentPath = ''; // Stores the current drill-down path, e.g., 'gastos', 'gastos/casa'
 
+    // Generate consistent colors for categories
+    const generateColor = (function() {
+        const colorCache = {};
+        return function(category) {
+            if (!colorCache[category]) {
+                colorCache[category] = `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.7)`;
+            }
+            return colorCache[category];
+        };
+    })();
+
     function renderChart(path) {
         currentPath = path;
         const filteredData = {};
@@ -271,18 +299,6 @@
 
         const labels = Object.keys(filteredData);
         const data = Object.values(filteredData);
-
-        // Generate consistent colors for categories
-        const colors = {};
-        const generateColor = (function() {
-            const colorCache = {};
-            return function(category) {
-                if (!colorCache[category]) {
-                    colorCache[category] = `rgba(${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, ${Math.floor(Math.random() * 255)}, 0.7)`;
-                }
-                return colorCache[category];
-            };
-        })();
 
         const backgroundColors = labels.map(label => generateColor(label));
         const borderColors = backgroundColors.map(color => color.replace('0.7', '1'));
@@ -354,8 +370,135 @@
         }
     }
 
+    // --- Gains Chart Logic ---
+    let myGainsChart; // Declare chart variable globally
+    let allCategoryGainsData = {{ category_gains_totals | tojson }};
+    let currentGainsPath = ''; // Stores the current drill-down path
+
+    function renderGainsChart(path) {
+        currentGainsPath = path;
+        const filteredData = {};
+        const chartTitle = document.getElementById('gainsChartTitle');
+        const backButton = document.getElementById('gainsBackButton');
+
+        if (path === '') {
+            // Top level: group by first segment
+            for (const categoryName in allCategoryGainsData) {
+                const value = allCategoryGainsData[categoryName];
+                const topLevelCategory = categoryName.split('/')[0];
+                if (filteredData[topLevelCategory]) {
+                    filteredData[topLevelCategory] += value;
+                } else {
+                    filteredData[topLevelCategory] = value;
+                }
+            }
+            chartTitle.textContent = 'Gains by Category';
+            backButton.style.display = 'none';
+        } else {
+            // Drill-down level: show subcategories
+            for (const categoryName in allCategoryGainsData) {
+                // Check if the category is a direct match for the current path
+                if (categoryName === path) {
+                    const label = 'Other'; // Use 'Other' for the direct category
+                    if (filteredData[label]) {
+                        filteredData[label] += allCategoryGainsData[categoryName];
+                    } else {
+                        filteredData[label] = allCategoryGainsData[categoryName];
+                    }
+                }
+                // Check for subcategories
+                else if (categoryName.startsWith(path + '/')) {
+                    const value = allCategoryGainsData[categoryName];
+                    const remainingPath = categoryName.substring(path.length + 1);
+                    const nextLevelCategory = remainingPath.split('/')[0];
+
+                    if (filteredData[nextLevelCategory]) {
+                        filteredData[nextLevelCategory] += value;
+                    } else {
+                        filteredData[nextLevelCategory] = value;
+                    }
+                }
+            }
+            chartTitle.textContent = `Gains for: ${path}`;
+            backButton.style.display = 'inline-block';
+        }
+
+        const labels = Object.keys(filteredData);
+        const data = Object.values(filteredData);
+
+        const backgroundColors = labels.map(label => generateColor(label));
+        const borderColors = backgroundColors.map(color => color.replace('0.7', '1'));
+
+        if (myGainsChart) {
+            myGainsChart.data.labels = labels;
+            myGainsChart.data.datasets[0].data = data;
+            myGainsChart.data.datasets[0].backgroundColor = backgroundColors;
+            myGainsChart.data.datasets[0].borderColor = borderColors;
+            myGainsChart.update();
+        } else {
+            const ctx = document.getElementById('categoryGainsChart').getContext('2d');
+            myGainsChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Gains by Category',
+                        data: data,
+                        backgroundColor: backgroundColors,
+                        borderColor: borderColors,
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed !== null) {
+                                        label += new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(context.parsed);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const clickedElementIndex = elements[0].index;
+                            const label = myGainsChart.data.labels[clickedElementIndex];
+                            const newPath = currentGainsPath === '' ? label : `${currentGainsPath}/${label}`;
+                            
+                            // Check if there are subcategories for the new path
+                            let hasSubcategories = false;
+                            for (const categoryName in allCategoryGainsData) {
+                                if (categoryName.startsWith(newPath + '/') && categoryName !== newPath) {
+                                    hasSubcategories = true;
+                                    break;
+                                }
+                            }
+
+                            if (hasSubcategories) {
+                                renderGainsChart(newPath);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
-        renderChart(''); // Render initial chart
+        renderChart(''); // Render initial expenses chart
+        renderGainsChart(''); // Render initial gains chart
     });
 
     document.getElementById('backButton').addEventListener('click', function() {
@@ -365,6 +508,16 @@
             renderChart(pathParts.join('/'));
         } else {
             renderChart(''); // Go to top level
+        }
+    });
+
+    document.getElementById('gainsBackButton').addEventListener('click', function() {
+        const pathParts = currentGainsPath.split('/');
+        if (pathParts.length > 1) {
+            pathParts.pop(); // Remove last part
+            renderGainsChart(pathParts.join('/'));
+        } else {
+            renderGainsChart(''); // Go to top level
         }
     });
 </script>

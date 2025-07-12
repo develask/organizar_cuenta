@@ -237,8 +237,9 @@ async def index(request: Request, month: Optional[str]= None, category_id: Optio
     total_received = sum(t['importe'] for t in transactions_list if t['importe'] > 0)
     total_difference = total_received + total_spent  # spent is already negative
     
-    # Calculate totals per category for the chart (only expenses)
+    # Calculate totals per category for the chart
     category_totals = {}
+    category_gains_totals = {}
     for transaction in transactions_list:
         if transaction['importe'] < 0:
             if transaction['categories']:
@@ -253,6 +254,18 @@ async def index(request: Request, month: Optional[str]= None, category_id: Optio
                 if 'Uncategorized' not in category_totals:
                     category_totals['Uncategorized'] = 0
                 category_totals['Uncategorized'] += abs(transaction['importe'])
+        elif transaction['importe'] > 0:
+            if transaction['categories']:
+                for category in transaction['categories']:
+                    category_name = category['name']
+                    if category_name not in category_gains_totals:
+                        category_gains_totals[category_name] = 0
+                    category_gains_totals[category_name] += transaction['importe']
+            else:
+                # Handle transactions with no category
+                if 'Uncategorized' not in category_gains_totals:
+                    category_gains_totals['Uncategorized'] = 0
+                category_gains_totals['Uncategorized'] += transaction['importe']
 
     # Get all categories
     categories = db.select('categories')
@@ -272,7 +285,8 @@ async def index(request: Request, month: Optional[str]= None, category_id: Optio
             "total_spent": total_spent,
             "total_received": total_received,
             "total_difference": total_difference,
-            "category_totals": category_totals
+            "category_totals": category_totals,
+            "category_gains_totals": category_gains_totals
         }
     )
 
