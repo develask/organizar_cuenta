@@ -1,6 +1,8 @@
 from typing import Any, Optional
 import sys
 import os
+from datetime import datetime
+from difflib import SequenceMatcher
 
 # Add project root (/Users/mikel/projects/organizar_cuenta) to the Python path to allow importing database_connection
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -175,50 +177,128 @@ def delete_category(category_id: int) -> Any:
         db.close()
 
 @mcp.tool()
-def assign_category_to_transaction(transaction_id: int, category_id: int) -> Any:
+def assign_category_to_transactions(transaction_ids: list[int], category_id: int) -> Any:
     """
-    Asigna una categoría a una transacción.
-    :param transaction_id: El ID de la transacción.
+    Asigna una categoría a una o varias transacciones.
+    :param transaction_ids: La lista de IDs de las transacciones.
     :param category_id: El ID de la categoría a asignar.
     :return: Un diccionario con el resultado de la operación.
     """
     db = get_db_connection()
     try:
-        existing = db.select(
-            'movements_categories',
-            where='movement_id = ? AND category_id = ?',
-            where_params=(transaction_id, category_id)
-        )
-        if existing:
-            return {"success": False, "message": "La categoría ya está asignada a esta transacción."}
+        # Evitar duplicados: obtener las asignaciones existentes
+        placeholders = ','.join(['?'] * len(transaction_ids))
+        query = f"""SELECT movement_id FROM movements_categories 
+                   WHERE movement_id IN ({placeholders}) AND category_id = ?"""
+        existing = db.execute_query(query, transaction_ids + [category_id])
+        existing_ids = {row[0] for row in existing}
 
-        db.insert('movements_categories', {
-            'movement_id': transaction_id,
-            'category_id': category_id
-        })
-        return {"success": True, "message": "Categoría asignada exitosamente."}
+        # Filtrar las transacciones que ya tienen la categoría asignada
+        new_transaction_ids = [tid for tid in transaction_ids if tid not in existing_ids]
+
+        if not new_transaction_ids:
+            return {"success": False, "message": "La categoría ya está asignada a todas las transacciones seleccionadas."}
+
+        # Insertar las nuevas asignaciones
+        for transaction_id in new_transaction_ids:
+            db.insert('movements_categories', {
+                'movement_id': transaction_id,
+                'category_id': category_id
+            })
+        
+        return {"success": True, "message": f"Categoría asignada a {len(new_transaction_ids)} transacciones."}
     finally:
         db.close()
 
 @mcp.tool()
-def remove_category_from_transaction(transaction_id: int, category_id: int) -> Any:
+def remove_category_from_transactions(transaction_ids: list[int], category_id: int) -> Any:
     """
-    Elimina la asignación de una categoría a una transacción.
-    :param transaction_id: El ID de la transacción.
-    :param category_id: El ID de la categoría a eliminar de la transacción.
+    Elimina la asignación de una categoría a una o varias transacciones.
+    :param transaction_ids: La lista de IDs de las transacciones.
+    :param category_id: El ID de la categoría a eliminar de las transacciones.
     :return: Un diccionario con el resultado de la operación.
     """
     db = get_db_connection()
     try:
+        placeholders = ','.join(['?'] * len(transaction_ids))
+        where_clause = f"movement_id IN ({placeholders}) AND category_id = ?"
+        params = transaction_ids + [category_id]
+        
         rows_affected = db.delete(
             'movements_categories',
-            'movement_id = ? AND category_id = ?',
-            (transaction_id, category_id)
+            where_clause,
+            params
         )
+        
         if rows_affected > 0:
-            return {"success": True, "message": "Categoría eliminada de la transacción."}
+            return {"success": True, "message": f"Categoría eliminada de {rows_affected} transacciones."}
         else:
-            return {"success": False, "message": "No se encontró la asignación de categoría."}
+            return {"success": False, "message": "No se encontró la asignación de categoría en las transacciones seleccionadas."}
+    finally:
+        db.close()
+
+@mcp.tool()
+def find_similar_transactions(description: str, amount: float, date: str, threshold: float = 0.8, top_k = None) -> Any:
+    """
+    Encuentra transacciones similares basadas en la descripción, el importe y la fecha.
+    Busca transacciones en el último año con descripciones y valores similares.
+    También considera la similitud en el día de la semana, el día del mes y el día del año.
+
+    :param description: La descripción de la transacción a comparar.
+    :param amount: El importe de la transacción a comparar.
+    :param date: La fecha de la transacción a comparar (formato 'YYYY-MM-DD').
+    :param threshold: El umbral de similitud para la descripción (default: 0.8). No setiene en cuenta con top_k.
+    :param top_k: Numero de transacciones a devolver (opcional, si se especifica, limita el número de resultados).
+    :return: Una lista de transacciones similares.
+    """
+    db = get_db_connection()
+    try:
+        # Obtener todas las transacciones del último año
+        query = """
+            SELECT id, fecha, descripcion, importe
+            FROM movimientos
+            WHERE fecha BETWEEN date(?, '-1 year') AND ?
+        """
+        transactions = db.execute_query(query, (date, date))
+
+        similar_transactions = []
+        for trans in transactions:
+            # Calcular la similitud de la descripción
+            desc_similarity = SequenceMatcher(None, description.lower(), trans['descripcion'].lower()).ratio()
+
+            # Calcular la similitud del importe
+            amount_similarity = 1 - abs(amount - trans['importe']) / max(abs(amount), abs(trans['importe']))
+
+            # Calcular la similitud de la fecha
+            trans_date = datetime.strptime(trans['fecha'], '%Y-%m-%d')
+            search_date = datetime.strptime(date, '%Y-%m-%d')
+            
+            day_of_week_similarity = 1 if trans_date.weekday() == search_date.weekday() else 0
+            day_of_month_similarity = 1 - abs(trans_date.day - search_date.day) / 30
+            day_of_year_similarity = 1 - abs(trans_date.timetuple().tm_yday - search_date.timetuple().tm_yday) / 365
+            
+            date_similarity = (day_of_week_similarity + day_of_month_similarity + day_of_year_similarity) / 3
+
+            # Calcular la puntuación de similitud total
+            total_similarity = (desc_similarity + amount_similarity + date_similarity) / 3
+
+            similar_transactions.append({
+                'id': trans['id'],
+                'fecha': trans['fecha'],
+                'descripcion': trans['descripcion'],
+                'importe': trans['importe'],
+                'similarity': total_similarity
+            })
+
+        # Ordenar por similitud descendente
+        similar_transactions.sort(key=lambda x: x['similarity'], reverse=True)
+
+        if top_k:
+            similar_transactions = similar_transactions[:top_k]
+        else:
+            similar_transactions = [x for x in similar_transactions if x['similarity'] >= threshold]
+
+        return similar_transactions
     finally:
         db.close()
 
