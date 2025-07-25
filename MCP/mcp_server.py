@@ -238,7 +238,7 @@ def remove_category_from_transactions(transaction_ids: list[int], category_id: i
         db.close()
 
 @mcp.tool()
-def find_similar_transactions(description: str, amount: float, date: str, threshold: float = 0.8, top_k = None) -> Any:
+def find_similar_transactions(description: str, amount: float, date: str, threshold: float = 0.8, top_k: Optional[int] = None) -> Any:
     """
     Encuentra transacciones similares basadas en la descripción, el importe y la fecha.
     Busca transacciones en el último año con descripciones y valores similares.
@@ -293,8 +293,8 @@ def find_similar_transactions(description: str, amount: float, date: str, thresh
         # Ordenar por similitud descendente
         similar_transactions.sort(key=lambda x: x['similarity'], reverse=True)
 
-        if top_k:
-            similar_transactions = similar_transactions[:top_k]
+        if top_k is not None:
+            similar_transactions = similar_transactions[:int(top_k)]
         else:
             similar_transactions = [x for x in similar_transactions if x['similarity'] >= threshold]
 
