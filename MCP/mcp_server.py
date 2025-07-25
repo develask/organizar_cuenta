@@ -247,20 +247,44 @@ def find_similar_transactions(description: str, amount: float, date: str, thresh
     :param description: La descripción de la transacción a comparar.
     :param amount: El importe de la transacción a comparar.
     :param date: La fecha de la transacción a comparar (formato 'YYYY-MM-DD').
-    :param threshold: El umbral de similitud para la descripción (default: 0.8). No setiene en cuenta con top_k.
+    :param threshold: El umbral de similitud para la descripción (default: 0.8). No se tiene en cuenta con top_k.
     :param top_k: Numero de transacciones a devolver (opcional, si se especifica, limita el número de resultados).
-    :return: Una lista de transacciones similares.
+    :return: Una lista de transacciones similares con sus categorías.
     """
     db = get_db_connection()
     try:
-        # Obtener todas las transacciones del último año
+        # Obtener todas las transacciones del último año con sus categorías
         query = """
-            SELECT id, fecha, descripcion, importe
-            FROM movimientos
-            WHERE fecha BETWEEN date(?, '-1 year') AND ?
+            SELECT
+                m.id, m.fecha, m.descripcion, m.importe,
+                c.id as category_id, c.name as category_name
+            FROM movimientos m
+            LEFT JOIN movements_categories mc ON m.id = mc.movement_id
+            LEFT JOIN categories c ON mc.category_id = c.id
+            WHERE m.fecha BETWEEN date(?, '-1 year') AND ?
         """
-        transactions = db.execute_query(query, (date, date))
+        transactions_data = db.execute_query(query, (date, date))
 
+        # Agrupar transacciones y sus categorías
+        transactions_dict = {}
+        for row in transactions_data:
+            trans_id = row[0]
+            if trans_id not in transactions_dict:
+                transactions_dict[trans_id] = {
+                    'id': row[0],
+                    'fecha': row[1],
+                    'descripcion': row[2],
+                    'importe': row[3],
+                    'categories': []
+                }
+            if row[4] is not None:
+                transactions_dict[trans_id]['categories'].append({
+                    'id': row[4],
+                    'name': row[5]
+                })
+
+        transactions = list(transactions_dict.values())
+        
         similar_transactions = []
         for trans in transactions:
             # Calcular la similitud de la descripción
@@ -282,13 +306,8 @@ def find_similar_transactions(description: str, amount: float, date: str, thresh
             # Calcular la puntuación de similitud total
             total_similarity = (desc_similarity + amount_similarity + date_similarity) / 3
 
-            similar_transactions.append({
-                'id': trans['id'],
-                'fecha': trans['fecha'],
-                'descripcion': trans['descripcion'],
-                'importe': trans['importe'],
-                'similarity': total_similarity
-            })
+            trans['similarity'] = total_similarity
+            similar_transactions.append(trans)
 
         # Ordenar por similitud descendente
         similar_transactions.sort(key=lambda x: x['similarity'], reverse=True)
