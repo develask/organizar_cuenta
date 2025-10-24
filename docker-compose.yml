@@ -1,0 +1,19 @@
+version: "3.9"
+
+services:
+  organizar_cuenta:
+    build: .
+    container_name: organizar_cuenta
+    ports:
+      - "8000:8000"
+    environment:
+      APP_PORT: "8000"
+      DATABASE_PATH: "/data/movimientos.db"
+    volumes:
+      - data:/data
+      - ./movimientos:/app/movimientos
+    restart: unless-stopped
+
+volumes:
+  data:
+    name: organizar_cuenta_data

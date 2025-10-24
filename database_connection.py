@@ -1,8 +1,15 @@
+import os
 import sqlite3
+from pathlib import Path
 
 class DatabaseConnection:
     def __init__(self):
-        self.db_name = "movimientos.db"
+        db_path = os.environ.get("DATABASE_PATH", "movimientos.db")
+        self.db_path = Path(db_path).expanduser()
+        if not self.db_path.is_absolute():
+            project_root = Path(__file__).resolve().parent
+            self.db_path = (project_root / self.db_path).resolve()
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
         self.connection = None
 
     def __enter__(self):
@@ -18,12 +25,12 @@ class DatabaseConnection:
     def connect(self):
         """Establish a connection to the SQLite database."""
         try:
-            self.connection = sqlite3.connect(self.db_name, check_same_thread=False)
+            self.connection = sqlite3.connect(str(self.db_path), check_same_thread=False)
             # Enable foreign keys
             self.connection.execute("PRAGMA foreign_keys = ON")
             # Return dictionaries instead of tuples
             self.connection.row_factory = sqlite3.Row
-            print(f"Connected to database: {self.db_name}")
+            print(f"Connected to database: {self.db_path}")
         except sqlite3.Error as e:
             print(f"Error connecting to database: {e}")
 

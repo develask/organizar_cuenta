@@ -3,13 +3,12 @@ import sys
 import os
 from datetime import datetime
 from difflib import SequenceMatcher
+from pathlib import Path
 
-# Add project root (/Users/mikel/projects/organizar_cuenta) to the Python path to allow importing database_connection
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Move working directory to the project root
-os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+os.chdir(str(PROJECT_ROOT))
 
 
 

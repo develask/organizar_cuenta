@@ -81,6 +81,28 @@ python app.py
 
 La aplicación estará disponible en `http://localhost:8000`
 
+### Despliegue con Docker (opcional)
+
+1. Construye la imagen:
+   ```bash
+   docker build -t organizar_cuenta .
+   ```
+2. Arranca el contenedor (la web y el MCP se ejecutan juntos) con volumen persistente para la base de datos:
+   ```bash
+   docker run -d \
+     --name organizar_cuenta \
+     -p 8000:8000 \
+     -e APP_PORT=8000 \
+     -e DATABASE_PATH=/data/movimientos.db \
+     -v organizar_cuenta_data:/data \
+     organizar_cuenta
+   ```
+3. Alternativamente, usa docker compose:
+   ```bash
+   docker compose up -d
+   ```
+   El archivo `docker-compose.yml` expone la web en el puerto 8000 y monta el volumen `organizar_cuenta_data` para el archivo SQLite.
+
 ## 📋 Instrucciones de Uso
 
 ### Subir Archivos Excel
