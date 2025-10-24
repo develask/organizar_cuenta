@@ -15,16 +15,14 @@ Esta aplicación web me permite importar mis extractos bancarios (archivos Excel
 - **Categorización**: Sistema de categorías personalizables para organizar gastos
 - **Interfaz web**: Interfaz moderna con Bootstrap para visualizar y gestionar movimientos
 - **Filtros**: Filtrado por mes y categoría
-- **Plantilla de ejemplo**: Descarga de archivo Excel de ejemplo con el formato correcto
 - **Manejo de errores**: Páginas de error personalizadas y validación robusta
-- **Análisis**: Jupyter Notebook para análisis de datos con pandas
 
 ## 🛠️ Tecnologías Utilizadas
 
 - **Backend**: Python, FastAPI
 - **Base de datos**: SQLite
 - **Frontend**: HTML, CSS, Bootstrap, JavaScript
-- **Análisis de datos**: Pandas, Jupyter Notebook
+- **Análisis de datos**: Pandas
 - **Procesamiento de archivos**: Pandas para leer archivos Excel
 
 ## 📁 Estructura del Proyecto
@@ -34,7 +32,6 @@ Esta aplicación web me permite importar mis extractos bancarios (archivos Excel
 ├── database_connection.py  # Clase para manejo de base de datos
 ├── main.py                # Script principal para inicialización
 ├── read_file.py           # Utilidades para leer archivos Excel
-├── movimientos.ipynb      # Notebook para análisis de datos
 ├── static/                # Archivos estáticos (CSS, JS)
 │   ├── css/
 │   └── js/
@@ -84,11 +81,6 @@ python app.py
 
 La aplicación estará disponible en `http://localhost:8000`
 
-3. **Análisis de datos** (opcional):
-```bash
-jupyter notebook movimientos.ipynb
-```
-
 ## 📋 Instrucciones de Uso
 
 ### Subir Archivos Excel
@@ -99,7 +91,6 @@ jupyter notebook movimientos.ipynb
    - Cabeceras en la fila 6 (índice 5): data, azalpena, balio-data, eragiketaren zenbatekoa, saldoa
    - Datos a partir de la fila 8
 3. **Sube el archivo**: Arrastra y suelta el archivo o haz clic para seleccionarlo
-4. **Descarga plantilla**: Si necesitas un ejemplo, descarga la plantilla de ejemplo
 
 ### Gestión de Categorías
 
@@ -151,7 +142,6 @@ Cualquier fila: fecha | concepto | fecha valor | importe | saldo
 - Procesamiento automático de formato bancario
 - Detección y omisión automática de duplicados
 - Validación robusta de datos con manejo de errores
-- Plantilla de ejemplo descargable
 - Limpieza y normalización de datos
 
 ## 🔒 Privacidad y Seguridad
