@@ -87,13 +87,17 @@ La aplicación estará disponible en `http://localhost:8000`
    ```bash
    docker build -t organizar_cuenta .
    ```
-2. Arranca el contenedor (la web y el MCP se ejecutan juntos) con volumen persistente para la base de datos:
+2. Arranca el contenedor (la web y el MCP HTTP se ejecutan juntos) con volumen persistente para la base de datos:
    ```bash
    docker run -d \
      --name organizar_cuenta \
      -p 8000:8000 \
+     -p 8800:8800 \
      -e APP_PORT=8000 \
      -e DATABASE_PATH=/data/movimientos.db \
+     -e MCP_TRANSPORT=sse \
+     -e MCP_PORT=8800 \
+     -e MCP_ALLOWED_ORIGINS=* \
      -v organizar_cuenta_data:/data \
      organizar_cuenta
    ```
@@ -101,7 +105,18 @@ La aplicación estará disponible en `http://localhost:8000`
    ```bash
    docker compose up -d
    ```
-   El archivo `docker-compose.yml` expone la web en el puerto 8000 y monta el volumen `organizar_cuenta_data` para el archivo SQLite.
+   El archivo `docker-compose.yml` expone la web en el puerto 8000, el MCP HTTP en 8800 y monta el volumen `organizar_cuenta_data` para el archivo SQLite.
+
+### MCP expuesto vía HTTP/SSE
+
+El servidor MCP ahora se ofrece mediante HTTP usando SSE, por lo que cualquier cliente compatible puede conectarse a `http://localhost:8800` (o al host/puerto que configures). Variables de entorno relevantes:
+
+- `MCP_TRANSPORT`: por defecto `sse`. Asigna `stdio` si quieres volver al modo anterior.
+- `MCP_HOST`: host a enlazar, por defecto `0.0.0.0`.
+- `MCP_PORT`: puerto expuesto (8800 por defecto).
+- `MCP_ALLOWED_ORIGINS`: lista separada por comas de orígenes permitidos (`*` permite todos).
+
+Exponiendo el puerto 8800 en tu infraestructura podrás acceder al MCP desde internet o limitarlo a tu red privada ajustando estas variables.
 
 ## 📋 Instrucciones de Uso
 

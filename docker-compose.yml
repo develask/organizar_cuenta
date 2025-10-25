@@ -6,9 +6,13 @@ services:
     container_name: organizar_cuenta
     ports:
       - "8000:8000"
+      - "8800:8800"
     environment:
       APP_PORT: "8000"
       DATABASE_PATH: "/data/movimientos.db"
+      MCP_TRANSPORT: "sse"
+      MCP_PORT: "8800"
+      MCP_ALLOWED_ORIGINS: "*"
     volumes:
       - data:/data
       - ./movimientos:/app/movimientos
