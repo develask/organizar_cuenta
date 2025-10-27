@@ -1,23 +1,20 @@
 version: "3.9"
 
 services:
-  organizar_cuenta:
-    build: .
-    container_name: organizar_cuenta
+  web:
+    build:
+      context: .
+    image: organizar_cuenta
     ports:
-      - "8000:8000"
-      - "8800:8800"
+      - "8080:80"
     environment:
-      APP_PORT: "8000"
-      DATABASE_PATH: "/data/movimientos.db"
-      MCP_TRANSPORT: "sse"
-      MCP_PORT: "8800"
-      MCP_ALLOWED_ORIGINS: "*"
+      DATABASE_PATH: /data/movimientos.db
+      UVICORN_HOST: 0.0.0.0
+      UVICORN_PORT: 8000
+      MCP_TRANSPORT: http
+      MCP_PORT: 8800
     volumes:
-      - data:/data
-      - ./movimientos:/app/movimientos
-    restart: unless-stopped
+      - db-data:/data
 
 volumes:
-  data:
-    name: organizar_cuenta_data
+  db-data:

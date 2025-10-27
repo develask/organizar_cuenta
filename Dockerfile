@@ -1,23 +1,30 @@
-FROM python:3.11-slim
+FROM python:3.11-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    DATABASE_PATH=/data/movimientos.db \
-    APP_PORT=8000 \
-    MCP_TRANSPORT=sse \
-    MCP_PORT=8800 \
-    MCP_ALLOWED_ORIGINS=*
+    PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-COPY requirements.txt ./
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nginx \
+    && rm -rf /var/lib/apt/lists/*
 
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-VOLUME ["/data"]
+RUN chmod +x start.sh
 
-EXPOSE 8000 8800
+ENV DATABASE_PATH=/data/movimientos.db \
+    UVICORN_HOST=0.0.0.0 \
+    UVICORN_PORT=8000 \
+    MCP_HOST=0.0.0.0 \
+    MCP_PORT=8800
 
-CMD ["python", "run_services.py"]
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+RUN rm -f /etc/nginx/sites-enabled/default
+
+EXPOSE 80
+
+CMD ["bash", "/app/start.sh"]

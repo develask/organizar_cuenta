@@ -13,7 +13,7 @@ os.chdir(str(PROJECT_ROOT))
 
 
 from database_connection import DatabaseConnection
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 mcp = FastMCP("cuentas")
 
