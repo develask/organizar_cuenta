@@ -3,18 +3,17 @@ import sys
 import os
 from datetime import datetime
 from difflib import SequenceMatcher
+from pathlib import Path
 
-# Add project root (/Users/mikel/projects/organizar_cuenta) to the Python path to allow importing database_connection
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
-# Move working directory to the project root
-os.chdir(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
+os.chdir(str(PROJECT_ROOT))
 
 
 
 from database_connection import DatabaseConnection
-from mcp.server.fastmcp import FastMCP
+from fastmcp import FastMCP
 
 mcp = FastMCP("cuentas")
 
@@ -321,5 +320,33 @@ def find_similar_transactions(description: str, amount: float, date: str, thresh
     finally:
         db.close()
 
+def parse_allowed_origins(origins_env: Optional[str]) -> list[str]:
+    """
+    Parses comma-separated origins from env var.
+    Returns wildcard if nothing provided.
+    """
+    if not origins_env:
+        return ["*"]
+    origins = [origin.strip() for origin in origins_env.split(",")]
+    return [origin for origin in origins if origin] or ["*"]
+
+
 if __name__ == "__main__":
-    mcp.run(transport='stdio')
+    transport = os.getenv("MCP_TRANSPORT", "sse").lower()
+    if transport == "stdio":
+        mcp.run(transport='stdio')
+    elif transport in {"sse", "http"}:
+        host = os.getenv("MCP_HOST", "0.0.0.0")
+        port = int(os.getenv("MCP_PORT", "8800"))
+        allowed_origins = parse_allowed_origins(os.getenv("MCP_ALLOWED_ORIGINS"))
+
+        mcp.run(
+            transport='sse',
+            host=host,
+            port=port,
+            allowed_origins=allowed_origins
+        )
+    else:
+        raise ValueError(
+            f"Transporte MCP desconocido '{transport}'. Usa 'stdio' o 'http/sse'."
+        )
