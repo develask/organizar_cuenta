@@ -6,13 +6,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends nginx \
+    && apt-get install -y --no-install-recommends nginx git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN git clone https://github.com/develask/organizar_cuenta.git
+RUN mv organizar_cuenta/* . && rm -rf organizar_cuenta
 
-COPY . .
+RUN pip install --no-cache-dir -r requirements.txt
 
 RUN chmod +x start.sh
 
