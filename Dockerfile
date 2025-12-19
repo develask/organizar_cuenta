@@ -22,7 +22,7 @@ ENV DATABASE_PATH=/data/movimientos.db \
     MCP_HOST=0.0.0.0 \
     MCP_PORT=8800
 
-COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+RUN cp nginx/default.conf /etc/nginx/conf.d/default.conf
 RUN rm -f /etc/nginx/sites-enabled/default
 
 EXPOSE 80
