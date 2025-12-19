@@ -6,3 +6,4 @@ jinja2
 python-multipart
 fastmcp
 xlrd
+git+https://github.com/toon-format/toon-python.git

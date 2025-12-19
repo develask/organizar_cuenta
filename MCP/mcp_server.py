@@ -4,6 +4,7 @@ import os
 from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
+from toon_format import encode
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
@@ -73,7 +74,7 @@ def get_transactions(month: str = None, category_id: Optional[int] = None) -> An
                 transactions_dict[trans_id]['categories'].append({
                     'id': row[6], 'name': row[7], 'description': row[8]
                 })
-        return list(transactions_dict.values())
+        return encode(list(transactions_dict.values()))
     finally:
         db.close()
 
@@ -105,7 +106,7 @@ def get_category_report(month: str = None) -> Any:
         query += " GROUP BY c.id ORDER BY c.name"
 
         categories_data = db.execute_query(query, where_params)
-        return [{'id': row[0], 'name': row[1], 'total': row[2]} for row in categories_data]
+        return encode([{'id': row[0], 'name': row[1], 'total': row[2]} for row in categories_data])
     finally:
         db.close()
 
@@ -120,7 +121,7 @@ def get_categories() -> Any:
         categories = db.select('categories')
         categories_list = [{'id': c[0], 'name': c[1], 'description': c[2]} for c in categories]
         categories_list.sort(key=lambda c: c['name'].lower())
-        return categories_list
+        return encode(categories_list)
     finally:
         db.close()
 
@@ -135,7 +136,7 @@ def create_category(name: str, description: Optional[str] = None) -> Any:
     db = get_db_connection()
     try:
         db.insert('categories', {'name': name, 'description': description})
-        return {"success": True, "message": f"Categoría '{name}' creada exitosamente."}
+        return encode({"success": True, "message": f"Categoría '{name}' creada exitosamente."})
     finally:
         db.close()
 
@@ -156,7 +157,7 @@ def update_category(category_id: int, name: str, description: Optional[str] = No
             'id = ?',
             (category_id,)
         )
-        return {"success": True, "message": f"Categoría con ID {category_id} actualizada."}
+        return encode({"success": True, "message": f"Categoría con ID {category_id} actualizada."})
     finally:
         db.close()
 
@@ -171,7 +172,7 @@ def delete_category(category_id: int) -> Any:
     try:
         db.delete('movements_categories', 'category_id = ?', (category_id,))
         db.delete('categories', 'id = ?', (category_id,))
-        return {"success": True, "message": f"Categoría con ID {category_id} eliminada."}
+        return encode({"success": True, "message": f"Categoría con ID {category_id} eliminada."})
     finally:
         db.close()
 
@@ -205,7 +206,7 @@ def assign_category_to_transactions(transaction_ids: list[int], category_id: int
                 'category_id': category_id
             })
         
-        return {"success": True, "message": f"Categoría asignada a {len(new_transaction_ids)} transacciones."}
+        return encode({"success": True, "message": f"Categoría asignada a {len(new_transaction_ids)} transacciones."})
     finally:
         db.close()
 
@@ -230,9 +231,9 @@ def remove_category_from_transactions(transaction_ids: list[int], category_id: i
         )
         
         if rows_affected > 0:
-            return {"success": True, "message": f"Categoría eliminada de {rows_affected} transacciones."}
+            return encode({"success": True, "message": f"Categoría eliminada de {rows_affected} transacciones."})
         else:
-            return {"success": False, "message": "No se encontró la asignación de categoría en las transacciones seleccionadas."}
+            return encode({"success": False, "message": "No se encontró la asignación de categoría en las transacciones seleccionadas."})
     finally:
         db.close()
 
@@ -316,7 +317,7 @@ def find_similar_transactions(description: str, amount: float, date: str, thresh
         else:
             similar_transactions = [x for x in similar_transactions if x['similarity'] >= threshold]
 
-        return similar_transactions
+        return encode(similar_transactions)
     finally:
         db.close()
 
